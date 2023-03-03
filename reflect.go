@@ -5,18 +5,8 @@ import (
 	"reflect"
 )
 
-func indirect(v reflect.Value) reflect.Value {
-	// Issue #24153 indicates that it is generally not a guaranteed property
-	// that you may round-trip a reflect.Value by calling Value.Addr().Elem()
-	// and expect the value to still be settable for values derived from
-	// unexported embedded struct fields.
-	//
-	// The logic below effectively does this when it first addresses the value
-	// (to satisfy possible pointer methods) and continues to dereference
-	// subsequent pointers as necessary.
-	//
-	// After the first round-trip, we set v back to the original value to
-	// preserve the original RW flags contained in reflect.Value.
+// 参考 json Unmarshal
+func Indirect(v reflect.Value) reflect.Value {
 	v0 := v
 	haveAddr := false
 
@@ -72,7 +62,7 @@ func MapToStruct(m map[string]interface{}, container interface{}, tagKey string)
 	}
 
 	// 如果是空地址 则赋值
-	rv = indirect(rv)
+	rv = Indirect(rv)
 	tv := rv.Type()
 
 	for i := 0; i < rv.NumField(); i++ {
@@ -107,5 +97,9 @@ func MapToStruct(m map[string]interface{}, container interface{}, tagKey string)
 		fieldValue.Set(newValue)
 	}
 
+	return
+}
+
+func StructToMap(in interface{}, m map[string]interface{}, tag string) (err error) {
 	return
 }
