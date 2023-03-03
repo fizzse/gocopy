@@ -20,16 +20,16 @@ json.Unmarshal([]byte(str), &m)
 
 money, err := IMap(m).Get("brother").Get("money").Int()
 if err != nil {
-fmt.Println(err)
-return
+    fmt.Println(err)
+    return
 }
 
 fmt.Println("money", money)
 
 name, err := IMap(m).GetDeepKey("brother.name").String()
 if err != nil {
-fmt.Println(err)
-return
+    fmt.Println(err)
+    return
 }
 
 fmt.Println("name", name)
