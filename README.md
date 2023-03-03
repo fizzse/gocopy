@@ -18,6 +18,7 @@ str := `{
 m := make(map[string]interface{})
 json.Unmarshal([]byte(str), &m)
 
+// 注意 数值类型 int float都可以取到值，int会对float做截断
 v := NewIMap(m)
 money, err := v.Get("brother").Get("money").Int()
 if err != nil {

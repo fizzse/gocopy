@@ -23,7 +23,7 @@ func TestIMapGet(t *testing.T) {
 	json.Unmarshal([]byte(str), &m)
 
 	v := NewIMap(m)
-	money, err := v.Get("brother").Get("money").Int()
+	money, err := v.Get("brother").Get("money").Float()
 	if err != nil {
 		fmt.Println(err)
 	}
