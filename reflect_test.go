@@ -27,6 +27,4 @@ func TestMapToStruct(t *testing.T) {
 	_ = MapToStruct(m, &p, "json")
 	c, _ := json.Marshal(p)
 	fmt.Println(string(c))
-
-	//json.Unmarshal()
 }
