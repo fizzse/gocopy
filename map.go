@@ -136,10 +136,6 @@ func (i *IMap) String() (value string, err error) {
 		v := rv.String()
 		value = v
 
-	case reflect.Array:
-		v := rv.Bytes()
-		value = string(v)
-
 	default:
 		err = fmt.Errorf("%w: %s is %s not string", FieldTypeError, i.getKey, rv.Kind().String())
 		return
