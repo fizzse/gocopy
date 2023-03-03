@@ -1,58 +1,88 @@
 package gocopy
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 )
 
-type AnyValue struct {
+var (
+	FieldTypeError      = errors.New("field type error")
+	FieldNotExistsError = errors.New("field not exists")
+)
+
+type IMap struct {
 	Value   interface{}
 	InValid bool
+	getKey  string
 }
 
-type IMap map[string]interface{}
-
-func (m IMap) Get(key string) (value *AnyValue) {
-	value = &AnyValue{InValid: true}
-	iv, ok := m[key]
-	if !ok {
-		return
+func NewIMap(m interface{}) (v *IMap) {
+	v = &IMap{Value: m}
+	rv := reflect.ValueOf(m)
+	if rv.Kind() != reflect.Map {
+		v.InValid = true
 	}
-
-	value.Value = iv
-	value.InValid = false
 	return
 }
 
-func (m IMap) GetDeepKey(key string) (value *AnyValue) {
-	keys := strings.Split(key, ".")
-	for i, k := range keys {
-		if i == 0 {
-			value = m.Get(k)
-			continue
-		}
-
-		value = value.Get(k)
-	}
-
-	return
-}
-
-func (i *AnyValue) Get(key string) (value *AnyValue) {
+func (i *IMap) Get(key string) (v *IMap) {
+	v = &IMap{getKey: i.getKey}
 	if i.InValid {
 		return i
 	}
 
-	m, ok := i.Value.(map[string]interface{})
-	if !ok {
+	if v.getKey == "" {
+		v.getKey = key
+	} else {
+		v.getKey = v.getKey + "." + key
+	}
+
+	rv := reflect.ValueOf(i.Value)
+	if rv.Kind() != reflect.Map {
+		v.InValid = true
 		return
 	}
 
-	return IMap(m).Get(key)
+	iv := rv.MapIndex(reflect.ValueOf(key)).Interface()
+	v.Value = iv
+	return
 }
 
-func (i *AnyValue) Int() (value int, err error) {
+func (i *IMap) GetDeep(key string) (v *IMap) {
+	v = &IMap{Value: i.Value}
 	if i.InValid {
+		return v
+	}
+
+	rv := reflect.ValueOf(i.Value)
+	if rv.Kind() != reflect.Map {
+		v.InValid = true
+		return
+	}
+
+	keys := strings.Split(key, ".")
+	for _, key := range keys {
+		v = v.Get(key)
+		if v.InValid {
+			return
+		}
+	}
+
+	return
+}
+
+func (i *IMap) Valid() (err error) {
+	if i.InValid {
+		err = fmt.Errorf("%w: key %s not exists", FieldNotExistsError, i.getKey)
+	}
+
+	return
+}
+
+func (i *IMap) Int() (value int, err error) {
+	if err = i.Valid(); err != nil {
 		return
 	}
 
@@ -65,13 +95,16 @@ func (i *AnyValue) Int() (value int, err error) {
 	case reflect.Float64:
 		v := rv.Float()
 		value = int(v)
+	default:
+		err = fmt.Errorf("%w: %s is %s not int", FieldTypeError, i.getKey, rv.Kind().String())
+		return
 	}
 
 	return
 }
 
-func (i *AnyValue) Float() (value float64, err error) {
-	if i.InValid {
+func (i *IMap) Float() (value float64, err error) {
+	if err = i.Valid(); err != nil {
 		return
 	}
 
@@ -84,13 +117,16 @@ func (i *AnyValue) Float() (value float64, err error) {
 	case reflect.Float64:
 		v := rv.Float()
 		value = v
+	default:
+		err = fmt.Errorf("%w: %s is %s not float", FieldTypeError, i.getKey, rv.Kind().String())
+		return
 	}
 
 	return
 }
 
-func (i *AnyValue) String() (value string, err error) {
-	if i.InValid {
+func (i *IMap) String() (value string, err error) {
+	if err = i.Valid(); err != nil {
 		return
 	}
 
@@ -103,6 +139,10 @@ func (i *AnyValue) String() (value string, err error) {
 	case reflect.Array:
 		v := rv.Bytes()
 		value = string(v)
+
+	default:
+		err = fmt.Errorf("%w: %s is %s not string", FieldTypeError, i.getKey, rv.Kind().String())
+		return
 	}
 
 	return
